@@ -7,7 +7,7 @@ Students.data <-
   data.frame(CurrentAttitude, FutureViews, Personality)[-1, ]
 
 #split students into introverts (1) and others (2)
-Students.data$Personality <- as.numeric(
+Students.data$PersonalityNum <- as.numeric(
   factor(Students.data$Personality,
     levels = c('Introvert',
                'Ambivert',
@@ -74,14 +74,14 @@ viewcolors <-
 
 stacked_graph <-
   ggplot(data = Students.data,
-         aes(x = CurrentAttitude, y = Personality, fill = FutureViews)) +
+         aes(x = CurrentAttitude, y = PersonalityNum, fill = FutureViews)) +
   geom_col(position = "fill") +
   scale_y_continuous(labels = percent)
 
 p.labels <- c("Introverts", "Others")
 names(p.labels) <- c("1", "2")
 
-stacked_graph + facet_wrap(~ Personality, labeller = labeller(Personality = p.labels)) +
+stacked_graph + facet_wrap(~ PersonalityNum, labeller = labeller(PersonalityNum = p.labels)) +
   labs(x = "Views On Telework", y = "Desire To Continue Telework (%)", title =
          " Present vs Future Views On Telework/School") +
   theme_bw() +
@@ -107,7 +107,7 @@ stacked_graph + facet_wrap(~ Personality, labeller = labeller(Personality = p.la
     #allows us to choose font and font size
     #use 'fonts()' to see options
     plot.title = element_text(
-      size = 12,
+      size = 24,
       lineheight = .8,
       vjust = 1,
       family = "Rock Salt",
@@ -117,6 +117,8 @@ stacked_graph + facet_wrap(~ Personality, labeller = labeller(Personality = p.la
   scale_fill_manual(values = viewcolors)
 
 ### GRAPH 2 ###
+#install.packages('ggpubr')
+#install.packages('rstatix')
 
 Students.data$FutureViewsNum <-
   as.numeric(factor(
@@ -139,5 +141,75 @@ Students.data$CurrentAttitudeNum <-
                "Like",
                "Love")
   ))
+
+Students.data$Personality <-
+  factor(Students.data$Personality,
+         levels = c('Introvert',
+                    'Ambivert',
+                    'Extrovert'),
+         labels = c('Introverts',
+                    'Others',
+                    'Others')
+  )
+
 Students.data$Telework <-
   ((6 - Students.data$CurrentAttitudeNum) + Students.data$FutureViewsNum) / 2
+
+ggplot(data = Students.data, aes(x = Personality, y = Telework, fill=Personality)) +
+  labs(x = "Personality Type", y = "Desire To Continue Telework", title =
+         "Introversion and Telework") +
+  scale_fill_manual(values=c("#cc0000", "#e69f00")) +
+  geom_boxplot(color="darkblue") +
+  geom_jitter(width=0.13, height=0.3, color = "#99ccff") + 
+  theme_dark() +
+  theme(
+    axis.title = element_text(
+      size = 12,
+      lineheight = .8,
+      vjust = 1,
+      family = "Times New Roman"
+    ),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    legend.position = "none"
+  )
+
+library('rstatix')
+#outlier check
+Students.data %>%
+  identify_outliers(Telework)
+#there are no extreme outliers
+
+#normality check
+library('ggpubr')
+
+ggdensity(Students.data$Telework)
+ggqqplot(Students.data$Telework)
+#graphs seem approx. Normal
+shapiro_test(Students.data$Telework)
+#p-value below 0.05 indicates non-normality, but sample size
+#is greater than 50 so visual inspection is superior
+
+#variance check
+
+library(psych)
+library(car)
+describe(Students.data$Telework)
+#mean of 3.44, sd of 0.9
+describeBy(Students.data$Telework, Students.data$Personality)
+#introverts: mean of  2.96, sd of 0.96
+#others: mean of 3.59, sd of 0.83
+cor.test(Students.data$Telework, Students.data$Personality, use = "complete.obs")
+#p-value 0.001445, cor 0.302816, [0.121, 0.465]
+t.test(Telework ~ Personality, data = Students.data, var.equal = TRUE)
+#t = -3.271, df = 106, p-value = 0.001445
+summary(aov(Telework ~ Personality, data = Students.data))
+#f-value = 10.7, p = 0.00145
+Anova(aov(Telework ~ Personality, data = Students.data), type="III")
+
+library(Hmisc)
+ggplot(Students.data, aes(Personality, Telework)) + 
+  stat_summary(fun = mean, geom = "bar", fill = c("red", "blue"), color = "black") + 
+  stat_summary(fun.data = mean_cl_normal, geom = "errorbar", width = 0.2) +
+  labs (x = "Group", y = "Continued Telework Desire") + ylim(0, 5) + theme_bw()
