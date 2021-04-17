@@ -1,27 +1,29 @@
 ### BASICS ###
-Dataframe <- read.csv("LAB C_Poster Survey Data.csv", header = T)[-1, ]
+Dataframe <-
+  read.csv("LAB C_Poster Survey Data.csv", header = T)[-1,]
 CurrentAttitude <- Dataframe$C_g7_Q1
 FutureViews  <- Dataframe$C_g7_Q2
 Personality <- Dataframe$C_g7_Q3
 Students.data <-
-  data.frame(CurrentAttitude, FutureViews, Personality)[-1, ]
+  data.frame(CurrentAttitude, FutureViews, Personality)[-1,]
 
 #split students into introverts (1) and others (2)
-Students.data$PersonalityNum <- as.numeric(
-  factor(Students.data$Personality,
-    levels = c('Introvert',
-               'Ambivert',
-               'Extrovert'),
-    labels = c('Introverts',
-               'Others',
-               'Others')
-  ))
+Students.data$PersonalityNum <- as.numeric(factor(
+  Students.data$Personality,
+  levels = c('Introvert',
+             'Ambivert',
+             'Extrovert'),
+  labels = c('Introverts',
+             'Others',
+             'Others')
+))
 
 ### GRAPH 1 ###
 
 #turn responses into easier titles
 Students.data$CurrentAttitude <-
-  factor(Students.data$CurrentAttitude,
+  factor(
+    Students.data$CurrentAttitude,
     levels = c('It disgusts me',
                'Hate it',
                'Don\'t mind',
@@ -36,7 +38,8 @@ Students.data$CurrentAttitude <-
 
 #orders data labels
 Students.data$FutureViews <-
-  factor(Students.data$FutureViews,
+  factor(
+    Students.data$FutureViews,
     levels = c(
       "Strongly agree",
       "Agree",
@@ -52,8 +55,7 @@ Students.data$CurrentAttitude <-
                     "Hate",
                     "Neutral",
                     "Like",
-                    "Love")
-         )
+                    "Love"))
 
 #run the below lines the first time
 #install.packages('extrafont')
@@ -81,7 +83,7 @@ stacked_graph <-
 p.labels <- c("Introverts", "Others")
 names(p.labels) <- c("1", "2")
 
-stacked_graph + facet_wrap(~ PersonalityNum, labeller = labeller(PersonalityNum = p.labels)) +
+stacked_graph + facet_wrap( ~ PersonalityNum, labeller = labeller(PersonalityNum = p.labels)) +
   labs(x = "Views On Telework", y = "Desire To Continue Telework (%)", title =
          " Present vs Future Views On Telework/School") +
   theme_bw() +
@@ -143,24 +145,27 @@ Students.data$CurrentAttitudeNum <-
   ))
 
 Students.data$Personality <-
-  factor(Students.data$Personality,
-         levels = c('Introvert',
-                    'Ambivert',
-                    'Extrovert'),
-         labels = c('Introverts',
-                    'Others',
-                    'Others')
+  factor(
+    Students.data$Personality,
+    levels = c('Introvert',
+               'Ambivert',
+               'Extrovert'),
+    labels = c('Introverts',
+               'Others',
+               'Others')
   )
 
 Students.data$Telework <-
   ((6 - Students.data$CurrentAttitudeNum) + Students.data$FutureViewsNum) / 2
 
-ggplot(data = Students.data, aes(x = Personality, y = Telework, fill=Personality)) +
+ggplot(data = Students.data, aes(x = Personality, y = Telework, fill = Personality)) +
   labs(x = "Personality Type", y = "Desire To Continue Telework", title =
          "Introversion and Telework") +
-  scale_fill_manual(values=c("#cc0000", "#e69f00")) +
-  geom_boxplot(color="darkblue") +
-  geom_jitter(width=0.13, height=0.3, color = "#99ccff") + 
+  scale_fill_manual(values = c("#cc0000", "#e69f00")) +
+  geom_boxplot(color = "darkblue") +
+  geom_jitter(width = 0.13,
+              height = 0.3,
+              color = "#99ccff") +
   theme_dark() +
   theme(
     axis.title = element_text(
@@ -192,6 +197,9 @@ shapiro_test(Students.data$Telework)
 #is greater than 50 so visual inspection is superior
 
 #variance check
+Students.data %>%
+  levene_test(Telework ~ Personality)
+#p-value of 0.559 indicates no sig. diff in variances
 
 library(psych)
 library(car)
@@ -206,10 +214,17 @@ t.test(Telework ~ Personality, data = Students.data, var.equal = TRUE)
 #t = -3.271, df = 106, p-value = 0.001445
 summary(aov(Telework ~ Personality, data = Students.data))
 #f-value = 10.7, p = 0.00145
-Anova(aov(Telework ~ Personality, data = Students.data), type="III")
+Anova(aov(Telework ~ Personality, data = Students.data), type = "III")
 
 library(Hmisc)
-ggplot(Students.data, aes(Personality, Telework)) + 
-  stat_summary(fun = mean, geom = "bar", fill = c("red", "blue"), color = "black") + 
-  stat_summary(fun.data = mean_cl_normal, geom = "errorbar", width = 0.2) +
+ggplot(Students.data, aes(Personality, Telework)) +
+  stat_summary(
+    fun = mean,
+    geom = "bar",
+    fill = c("red", "blue"),
+    color = "black"
+  ) +
+  stat_summary(fun.data = mean_cl_normal,
+               geom = "errorbar",
+               width = 0.2) +
   labs (x = "Group", y = "Continued Telework Desire") + ylim(0, 5) + theme_bw()
